@@ -2,6 +2,9 @@
  * Se encarga de realizar la lectura de tension de la bateria cada cierto intervalo de tiempo
  * Limita la carga entre el rango de 12v a 13,5
  */
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
 
 //variables de lectura
 unsigned int val_crudo;
@@ -12,22 +15,26 @@ bool ADCstatus=1;
 void ADCsetup();  //Configuracion del modulo ADC
 void lectura();   //Llamado a la lectura del ADC
 
+//variables de control
+float tensionMin=1.1;
+float tensionMax=1.39;  //Tension maxima+2
+
 void setup() {
-  DDRB|=(1<<PB7);
-  PORTB&=~(1<<PB7);
+  DDRB|=(1<<PB5);
+  PORTB&=~(1<<PB5);
   ADCsetup();
   Serial.begin(9600);
 }
 
 void loop() {
   if(ADCstatus)lectura();   //Si ADCstatus==1 se realiza una lectura analogica de la bateria
-  if(tension<3){            //Si la tension <3 entonces la bateria esta con poca carga
+  if(tension<tensionMin){            //Si la tension <3 entonces la bateria esta con poca carga
     Serial.println("Carga");//3=12v
-    PORTB|=(1<<PB7);        //Comienza la carga
+    PORTB|=(1<<PB5);        //Comienza la carga
   }
-  if(tension>3.38){         //Si la tension esta por sobre 3.38 entonces la bateria se encuentra con una carga optima
+  if(tension>tensionMax){         //Si la tension esta por sobre 3.38 entonces la bateria se encuentra con una carga optima
     Serial.println("Fin de carga");//3.38=13.5v
-    PORTB&=~(1<<PB7);       //Se detiene la carga
+    PORTB&=~(1<<PB5);       //Se detiene la carga
   }
   delay(500);
   ADCstatus=1;
@@ -43,7 +50,7 @@ void ADCsetup(){
   ADCSRB=0b00000000;    // Sin disparo automatizado; por esta razón no es necesario ponerlo
   
   DIDR0=0b00001000;     // Desabilito buffer digital interno en ADC3.
-  DIDR2=0b00000000;
+//  DIDR2=0b00000000;
 }
 
 void lectura(){
